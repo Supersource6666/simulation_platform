@@ -71,18 +71,14 @@ void CheckState3D(const railway::VehicleModel3D& model) {
         return os.str();
     };
     Require(ok_state(model.Car()), ("Carbody state outside small-motion model range:" + dump(model.Car())).c_str());
-    // TEMPORARY: relaxed bogie bound to observe long-term trend.
-    auto ok_bogie = [](const railway::VehicleModel3D::BodyState& s) {
-        return std::isfinite(s.z) && std::abs(s.z) < 1.0e9;
-    };
-    Require(ok_bogie(model.Bogie(0)) && ok_bogie(model.Bogie(1)),
-            ("Bogie state non-finite: b0=" + dump(model.Bogie(0)) + " b1=" + dump(model.Bogie(1))).c_str());
+    Require(ok_state(model.Bogie(0)) && ok_state(model.Bogie(1)),
+            ("Bogie state outside small-motion model range: b0=" + dump(model.Bogie(0)) + " b1=" + dump(model.Bogie(1))).c_str());
     for (int i = 0; i < 4; ++i) {
         std::ostringstream os;
         os << "Wheelset " << i << " state outside small-motion range:" << dump(model.Wheelset(i));
         Require(ok_state(model.Wheelset(i)), os.str().c_str());
     }
-    Require(std::isfinite(model.MinSupportForce()) && model.MinSupportForce() > -1000000,
+    Require(std::isfinite(model.MinSupportForce()) && model.MinSupportForce() >= 0,
             "Support became tensile: linear support approximation is no longer applicable");
 }
 void SelfTest(railway::Parameters p) {
@@ -178,27 +174,15 @@ void SelfTest3D(railway::Parameters p) {
     double peak_z = 0, peak_y = 0, peak_yaw = 0;
     const double end = (p.track_start + p.track_length + p.bogie_spacing + p.wheelbase) / p.speed + 1;
     int count = static_cast<int>(std::ceil(end / 0.001));
-    if (const char* cap = std::getenv("RWV_COUNT")) count = std::min(count, std::atoi(cap));
     Require(count <= 100000, "Self-test scenario too long");
-    double peak_b0 = 0, peak_w0 = 0;
     for (int i = 0; i < count; ++i) {
         coarse.Step(0.001);
-        if (i % 500 == 0) {
-            auto c = coarse.Car(); auto b0 = coarse.Bogie(0); auto b1 = coarse.Bogie(1);
-            auto w0 = coarse.Wheelset(0);
-            std::cerr << "i=" << i << " cz=" << c.z << " b0z=" << b0.z << " b1z=" << b1.z
-                      << " w0z=" << w0.z << "\n";
-        }
         const auto c = coarse.Car();
-        const auto b0 = coarse.Bogie(0);
         const auto w0 = coarse.Wheelset(0);
         peak_z = std::max(peak_z, std::abs(c.z));
         peak_y = std::max(peak_y, std::abs(w0.y));
         peak_yaw = std::max(peak_yaw, std::abs(w0.yaw));
-        peak_b0 = std::max(peak_b0, std::abs(b0.z));
-        peak_w0 = std::max(peak_w0, std::abs(w0.z));
     }
-    std::cerr << "PEAKS car_z=" << peak_z << " b0z=" << peak_b0 << " w0z=" << peak_w0 << "\n";
     Require(peak_z > 1e-8, "Carbody vertical response is below numerical floor");
     // Lateral/yaw activity may remain very small for symmetric input; only require non-NaN.
     Require(std::isfinite(peak_y) && std::isfinite(peak_yaw), "Lateral/yaw state non-finite");

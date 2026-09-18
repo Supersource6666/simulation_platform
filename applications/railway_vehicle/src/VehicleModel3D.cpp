@@ -2,16 +2,11 @@
 #include "Track.h"
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <iomanip>
 #include <ostream>
 #include "chrono/physics/ChLinkTSDA.h"
 #include "chrono/physics/ChLinkRSDA.h"
-#include "chrono/physics/ChLinkLock.h"
 #include "chrono/timestepper/ChTimestepperHHT.h"
-
-// TEMPORARY diagnostic switches used to isolate the diverging subsystem.
-#define RWV_FLAG(name) (std::getenv(name) != nullptr)
 
 namespace railway {
 using namespace chrono;
@@ -48,21 +43,14 @@ class WheelRailSupportForce : public ChLinkTSDA::ForceFunctor {
         const auto v = TrackVerticalSplit(p, time, delay, p.rolling_gauge, p.support_k);
         const double input = side < 0 ? v.z_left : v.z_right;
         const double input_v = side < 0 ? v.vz_left : v.vz_right;
-        // One-sided Hertzian-like contact: the rail can only push the wheel (compression), never
-        // pull it (tension). The previous disengagement test (`anchor2.z < anchor1.z`) only fired
-        // when the wheelset had dropped below the static rail plane (which never happens under
-        // load), so the spring was free to enter its tensile regime as soon as the wheelset rose
-        // with the track input past the static preload -- producing a large negative support
-        // force that falsified `MinSupportForce()` and destabilised the bounce mode through the
-        // resulting negative-damping coupling.
+        // One-sided rail contact: the rail can only push the wheel (compression), never pull it
+        // (tension). Once the wheelset lifts off (compression >= 0) the support force must vanish;
+        // otherwise the spring enters tension and pulls the wheel downward, producing a large
+        // negative support force that falsifies MinSupportForce() and destabilises the bounce mode.
         const double compression = length - rest - input;
-        // One-sided rail contact: the rail pushes the wheel only while compressed (compression < 0).
-        // Once the wheelset lifts off (compression >= 0) the support force must vanish, otherwise the
-        // spring enters tension and pulls the wheel downward -- a tensile support produces a negative
-        // support force that destabilises the bounce mode through negative-damping coupling.
         if (compression >= 0)
             return 0.0;
-        const double F_damp = RWV_FLAG("RWV_NO_SUPPORTVEL") ? 0.0 : -p.support_c * (velocity - input_v);
+        const double F_damp = -p.support_c * (velocity - input_v);
         return -p.support_k * compression + F_damp;
     }
   private:
@@ -155,11 +143,6 @@ std::shared_ptr<ChBody> VehicleModel3D::AddBody(const std::string& name, double 
     body->SetPos(pos);
     body->EnableCollision(false);
     system.AddBody(body);
-    if (RWV_FLAG("RWV_LOCKROT")) {
-        auto guide = chrono_types::make_shared<ChLinkLockPrismatic>();
-        guide->Initialize(body, ground, ChFramed(pos));  // Free translation along global Z only.
-        system.AddLink(guide);
-    }
     return body;
 }
 
@@ -185,8 +168,6 @@ std::shared_ptr<ChLinkRSDA> VehicleModel3D::AddRotationalSpring(std::shared_ptr<
                                                                std::shared_ptr<ChBody> b,
                                                                ChVector3d axis_world,
                                                                double k, double c) {
-    if (RWV_FLAG("RWV_NO_RSDA"))
-        return nullptr;
     auto rsda = chrono_types::make_shared<ChLinkRSDA>();
     // Local frames on both bodies have their Z axis aligned with the requested world axis.
     // The bodies start at identity orientation, so body-local == world. Once the bodies rotate
@@ -217,42 +198,32 @@ void VehicleModel3D::BuildSuspension() {
         for (int side : {-1, +1}) {
             const double y_anchor = side * y_primary;
             // 1. Vertical primary (Z axis) on this side.
-            if (!RWV_FLAG("RWV_NO_PRIMARYV")) {
-                auto v_spring = AddTranslationalSpring(
-                    wheelsets[w_index], bogie, WorldVec(0, 0, 1),
-                    WorldVec(x_world, y_anchor, p.primary_lower_z),
-                    WorldVec(x_world, y_anchor, p.primary_upper_z),
-                    p.primary_k / 2, p.primary_c, primary_per_side_load);
-                if (!p.primary_curve.empty())
-                    v_spring->RegisterForceFunctor(chrono_types::make_shared<VerticalDamper>(
-                        p.primary_k / 2, p.primary_damper_count / 2.0, p.primary_curve));
-            }
+            auto v_spring = AddTranslationalSpring(
+                wheelsets[w_index], bogie, WorldVec(0, 0, 1),
+                WorldVec(x_world, y_anchor, p.primary_lower_z),
+                WorldVec(x_world, y_anchor, p.primary_upper_z),
+                p.primary_k / 2, p.primary_c, primary_per_side_load);
+            if (!p.primary_curve.empty())
+                v_spring->RegisterForceFunctor(chrono_types::make_shared<VerticalDamper>(
+                    p.primary_k / 2, p.primary_damper_count / 2.0, p.primary_curve));
             // 2. Lateral primary suspension is modelled by the wheel-rail lateral creep / contact
                     // stiffness and the yaw restraint; a separate lateral TSDA here would double-count
                     // the lateral channel and, with a vertical anchor span, act as an unintended
                     // vertical spring (historical bug), so it is intentionally omitted.
         }
-        // 3. Wheelset pitch is locked to the ground (fixed at zero). A real wheelset-axle has no
-        // pitch degree of freedom that affects contact (the contact point lies on the pitch
-        // axis); lateral effects are captured by the conicity + lateral-creep force functor.
-        // Coupling wheelset pitch to bogie pitch (the original design) lets the car-body
-        // bounce mode couple through the coincident-anchor primary lateral spring and breaks
-        // HHT under track excitation. The default ground lock uses a high stiffness that keeps
-        // the rotation at numerical zero without coupling to the bogie/bounce dynamics.
-        // The wheelset rotation about its own axis (Y) is the rolling DOF. With no longitudinal
-        // translation this roll does not accumulate and has no effect on contact, so it must stay
-        // essentially free. A stiff "pitch lock to ground" here was found to couple into the bogie
-        // bounce mode and drive the bogie/carbody into the geometric negative-stiffness region of
-        // the primary springs (anchor crossover), producing the vertical divergence. Keep only a
-        // very soft damping so the free roll angle cannot drift unboundedly on numerical noise.
+        // 3. Wheelset roll (pitch about its own Y axis). The wheelset has no longitudinal DOF so
+        // this roll does not accumulate and has no effect on the contact point (which lies on the
+        // roll axis); lateral effects are captured by the conicity + lateral-creep force functor.
+        // A stiff "pitch lock to ground" here couples into the bogie bounce mode and drives the
+        // bogie/carbody into the geometric negative-stiffness region of the primary springs
+        // (anchor crossover), producing the vertical divergence, so keep only a modest restraint
+        // that damps the free roll angle without locking it.
         const double pitch_k = p.primary_pitch_k > 0 ? p.primary_pitch_k : 1.0e2;
         const double pitch_c = p.primary_pitch_c > 0 ? p.primary_pitch_c : 1.0e2;
-        if (!RWV_FLAG("RWV_NO_PITCHLOCK"))
-            AddRotationalSpring(wheelsets[w_index], ground, WorldVec(0, 1, 0), pitch_k, pitch_c);
+        AddRotationalSpring(wheelsets[w_index], ground, WorldVec(0, 1, 0), pitch_k, pitch_c);
         // 4. Yaw RSDA (allows hunting motion).
-        if (!RWV_FLAG("RWV_NO_YAWRSDA"))
-            AddRotationalSpring(wheelsets[w_index], bogie, WorldVec(0, 0, 1),
-                                p.yaw_primary_k, p.yaw_primary_c);
+        AddRotationalSpring(wheelsets[w_index], bogie, WorldVec(0, 0, 1),
+                            p.yaw_primary_k, p.yaw_primary_c);
         // 5. Roll RSDA between wheelset and bogie (firm).
         AddRotationalSpring(wheelsets[w_index], bogie, WorldVec(1, 0, 0),
                             p.roll_primary_k, p.roll_primary_c);
@@ -261,16 +232,14 @@ void VehicleModel3D::BuildSuspension() {
         for (int side : {-1, +1}) {
             const double y_anchor = side * y_secondary;
             // 1. Vertical secondary between bogie and carbody on this side.
-            if (!RWV_FLAG("RWV_NO_SECONDARYV")) {
-                auto v_spring = AddTranslationalSpring(
-                    bogie, car, WorldVec(0, 0, 1),
-                    WorldVec(x_world, y_anchor, p.secondary_lower_z),
-                    WorldVec(x_world, y_anchor, p.secondary_upper_z),
-                    p.secondary_k / 2, p.secondary_c, secondary_per_side_load);
-                if (!p.secondary_curve.empty())
-                    v_spring->RegisterForceFunctor(chrono_types::make_shared<VerticalDamper>(
-                        p.secondary_k / 2, p.secondary_damper_count / 2.0, p.secondary_curve));
-            }
+            auto v_spring = AddTranslationalSpring(
+                bogie, car, WorldVec(0, 0, 1),
+                WorldVec(x_world, y_anchor, p.secondary_lower_z),
+                WorldVec(x_world, y_anchor, p.secondary_upper_z),
+                p.secondary_k / 2, p.secondary_c, secondary_per_side_load);
+            if (!p.secondary_curve.empty())
+                v_spring->RegisterForceFunctor(chrono_types::make_shared<VerticalDamper>(
+                    p.secondary_k / 2, p.secondary_damper_count / 2.0, p.secondary_curve));
             // 2. Lateral secondary suspension is carried by the secondary yaw restraint and the
                     // wheel-rail lateral creep; a separate lateral TSDA is omitted to avoid the
                     // historical vertical-spring bug and double-counting the lateral channel.
@@ -314,10 +283,8 @@ void VehicleModel3D::BuildWheelRailContact() {
             p.support_k * (2 - p.support_lr_balance), p.support_c, preload_per_rail);
         // The WheelRailSupportForce functor provides the prescribed vertical displacement (Lv / Rv)
         // and the rail-velocity coupling through the existing built-in stiffness/damping.
-        if (!RWV_FLAG("RWV_NO_SUPPORTFUNCTOR")) {
-            left->RegisterForceFunctor(chrono_types::make_shared<WheelRailSupportForce>(p, delay, -1));
-            right->RegisterForceFunctor(chrono_types::make_shared<WheelRailSupportForce>(p, delay, +1));
-        }
+        left->RegisterForceFunctor(chrono_types::make_shared<WheelRailSupportForce>(p, delay, -1));
+        right->RegisterForceFunctor(chrono_types::make_shared<WheelRailSupportForce>(p, delay, +1));
         // Lateral wheel-rail contact (Y direction). Anchors coincide in world space at
         // (x, 0, wheel_radius) so the wheelset sits at the rest position (length=0) on a tangent
         // contact with the rail centre-line. The 1 mm anchor offset and 1 mm rest length used
@@ -331,8 +298,7 @@ void VehicleModel3D::BuildWheelRailContact() {
         lateral->SetDampingCoefficient(0);
         lateral->SetRestLength(0);
         lateral->IsStiff(true);
-        if (!RWV_FLAG("RWV_NO_CREEP"))
-            lateral->RegisterForceFunctor(chrono_types::make_shared<LateralCreep>(p, delay));
+        lateral->RegisterForceFunctor(chrono_types::make_shared<LateralCreep>(p, delay));
         system.AddLink(lateral);
         links.push_back(lateral);
         // Spin creep (yaw moment) about world Z, with custom torque functor.
@@ -342,8 +308,7 @@ void VehicleModel3D::BuildWheelRailContact() {
         spin->Initialize(ground, wheelsets[i], true, frame, frame);
         spin->SetSpringCoefficient(0);
         spin->SetDampingCoefficient(0);
-        if (!RWV_FLAG("RWV_NO_SPIN"))
-            spin->RegisterTorqueFunctor(chrono_types::make_shared<LateralSpin>(p));
+        spin->RegisterTorqueFunctor(chrono_types::make_shared<LateralSpin>(p));
         system.AddLink(spin);
         rsdas.push_back(spin);
         (void)static_axle_load;
@@ -395,28 +360,6 @@ VehicleModel3D::VehicleModel3D(const Parameters& parameters) : p(parameters) {
 void VehicleModel3D::Step(double dt) {
     system.DoStepDynamics(dt);
     system.Update();
-    if (RWV_FLAG("RWV_TRACE")) {
-        static int n = 0;
-        ++n;
-        if (n >= 1600 && n <= 1850 && n % 10 == 0) {
-            double net1 = 0, net2 = 0;
-            for (auto& l : links) {
-                auto* tsda = dynamic_cast<ChLinkTSDA*>(l.get());
-                if (!tsda) continue;
-                const auto d = (tsda->GetPoint1Abs() - tsda->GetPoint2Abs()).GetNormalized();
-                const double f = tsda->GetForce();
-                if (tsda->GetBody1() == bogies[0].get()) net1 += (f * d).z();
-                if (tsda->GetBody2() == bogies[0].get()) net2 += (-f * d).z();
-            }
-            std::cerr << "n=" << n
-                      << " cz=" << (car->GetPos().z() - p.car_height)
-                      << " cvz=" << car->GetPosDt().z()
-                      << " b0z=" << (bogies[0]->GetPos().z() - p.bogie_height)
-                      << " b0vz=" << bogies[0]->GetPosDt().z()
-                      << " w0z=" << (wheelsets[0]->GetPos().z() - p.wheel_radius)
-                      << " w0vz=" << wheelsets[0]->GetPosDt().z() << "\n";
-        }
-    }
 }
 
 namespace {
