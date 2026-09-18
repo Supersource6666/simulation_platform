@@ -1,0 +1,42 @@
+{
+  "source_path": "E:\\railway_data_processing_scripts\\convert2dynamics_input\\output\\origin_excitation_data.txt",
+  "sha256": "6805cdbf4741b9377259a7ae2177be2fbe10f9e0008964f76cf3241ab8c9b8b3",
+  "rows": 53348,
+  "columns": [
+    "s",
+    "Lv",
+    "Rv",
+    "Ld",
+    "Rd"
+  ],
+  "units": "All five columns in metres; already converted by measurement2simpack.py",
+  "semantics": {
+    "s": "distance",
+    "Lv": "left vertical",
+    "Rv": "right vertical",
+    "Ld": "left lateral",
+    "Rd": "right lateral"
+  },
+  "first_s_m": 0.0,
+  "last_s_m": 13336.75,
+  "min_spacing_m": 0.25,
+  "max_spacing_m": 0.25,
+  "min_max_m": {
+    "Lv": [
+      -0.0106099996566772,
+      0.00578000020980835
+    ],
+    "Rv": [
+      -0.00843000030517578,
+      0.00632999992370605
+    ],
+    "Ld": [
+      -0.00523999977111816,
+      0.00601999998092651
+    ],
+    "Rd": [
+      -0.00492000007629395,
+      0.00617000007629395
+    ]
+  }
+}

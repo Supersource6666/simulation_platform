@@ -1,0 +1,20 @@
+{
+  "description": "ILLUSTRATIVE PARAMETERS ONLY - not a calibrated or certified train model",
+  "car_mass_kg": 38000,
+  "bogie_mass_kg": 3000,
+  "wheelset_mass_kg": 1800,
+  "bogie_spacing_m": 17.5,
+  "wheelbase_m": 2.5,
+  "primary_k_N_m": 2400000,
+  "primary_c_Ns_m": 20000,
+  "secondary_k_N_m": 600000,
+  "secondary_c_Ns_m": 30000,
+  "support_k_N_m": 100000000,
+  "support_c_Ns_m": 20000,
+  "speed_m_s": 83.33333333333333,
+  "track_amplitude_m": 0.001,
+  "track_wavelength_m": 25,
+  "track_start_m": 40,
+  "track_length_m": 200,
+  "gravity_m_s2": 9.81
+}

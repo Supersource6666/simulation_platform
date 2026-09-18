@@ -1,0 +1,136 @@
+{
+  "source_document": {
+    "path": "E:\\CIE\\25T(浦镇)车辆动力学参数.docx",
+    "sha256": "9221c70bd9b8f523c0e9e1e66cd0899a14dfae6931929cb1ba5de13b34b07fd7"
+  },
+  "parameter_status": "Document-based 25T and file-based vertical input; assumed support/speed; 7-DOF reduction; lateral channels not applied",
+  "bogie_mass_kg": 2160.0,
+  "wheelset_mass_kg": 1600.0,
+  "bogie_spacing_m": 18.0,
+  "wheelbase_m": 2.6,
+  "bogie_height_m": 0.5365,
+  "wheel_radius_m": 0.4575,
+  "primary_k_N_m": 1982000.0,
+  "secondary_k_N_m": 740000.0,
+  "primary_lower_z_m": 0.62,
+  "primary_upper_z_m": 0.926,
+  "secondary_lower_z_m": 0.6,
+  "secondary_upper_z_m": 0.959,
+  "primary_dampers_per_axle": 2,
+  "secondary_dampers_per_bogie": 2,
+  "primary_damper_curve_m_s_N": [
+    [
+      0,
+      0
+    ],
+    [
+      0.3,
+      2600.0
+    ],
+    [
+      0.5,
+      4095.0
+    ],
+    [
+      1.5,
+      9650.0
+    ]
+  ],
+  "secondary_damper_curve_m_s_N": [
+    [
+      0,
+      0
+    ],
+    [
+      0.15,
+      2250.0
+    ],
+    [
+      0.5,
+      3115.0
+    ]
+  ],
+  "support_k_N_m": 100000000.0,
+  "support_c_Ns_m": 20000,
+  "speed_m_s": 33.333333333333336,
+  "track_start_m": 40,
+  "gravity_m_s2": 9.81,
+  "assumptions": {
+    "speed": "120 km/h scenario assumption; no operating speed specified in source document",
+    "support": "Legacy linear bilateral equivalent axle support, not Hertz contact; source does not give these values",
+    "track": "Imported source in metres; C1 PCHIP interpolation; 5 m synthetic lead-in before first sample; no extrapolation beyond last sample",
+    "dampers": "Two per axle / two per bogie; odd symmetry, origin added, linear interpolation and last-segment extrapolation",
+    "damper_joints": "Source joint stiffnesses recorded but not modeled; dampers act directly on relative vertical velocity",
+    "reduction": "Seven vertical translations only; axlebox mass lumped, no pitch/roll/yaw or arm inertia",
+    "air_spring": "Normal inflated linear equivalent; deflated case not modeled",
+    "track_reduction": "Use (Lv+Rv)/2 for symmetric vertical support; retain Ld/Rd for export only, no lateral/roll dynamics"
+  },
+  "reference_only_not_used": {
+    "bare_wheelset_mass_kg": 1384.0,
+    "wheelset_inertia_kg_m2": [
+      655.6,
+      106.5,
+      655.6
+    ],
+    "bogie_inertia_kg_m2": [
+      1392.0,
+      2663.0,
+      3680.0
+    ],
+    "inertia_note": "Source says carbody parameter origin is at car center on rail plane. Do not assign directly as COM inertias without clarifying reference axes.",
+    "primary_damper_joint_stiffness_N_m": 1515000.0,
+    "secondary_damper_joint_stiffness_N_m": 16000000.0,
+    "car_inertia_source_kg_m2": [
+      350000.0,
+      3872000.0,
+      3610000.0
+    ]
+  },
+  "model_label": "Puzhen 25T YZ loaded",
+  "car_mass_kg": 52100.0,
+  "car_height_m": 2.096,
+  "track_file": "../data/origin_excitation_data.txt",
+  "track_lead_in_m": 5,
+  "track_source": {
+    "source_path": "E:\\railway_data_processing_scripts\\convert2dynamics_input\\output\\origin_excitation_data.txt",
+    "sha256": "6805cdbf4741b9377259a7ae2177be2fbe10f9e0008964f76cf3241ab8c9b8b3",
+    "rows": 53348,
+    "columns": [
+      "s",
+      "Lv",
+      "Rv",
+      "Ld",
+      "Rd"
+    ],
+    "units": "All five columns in metres; already converted by measurement2simpack.py",
+    "semantics": {
+      "s": "distance",
+      "Lv": "left vertical",
+      "Rv": "right vertical",
+      "Ld": "left lateral",
+      "Rd": "right lateral"
+    },
+    "first_s_m": 0.0,
+    "last_s_m": 13336.75,
+    "min_spacing_m": 0.25,
+    "max_spacing_m": 0.25,
+    "min_max_m": {
+      "Lv": [
+        -0.0106099996566772,
+        0.00578000020980835
+      ],
+      "Rv": [
+        -0.00843000030517578,
+        0.00632999992370605
+      ],
+      "Ld": [
+        -0.00523999977111816,
+        0.00601999998092651
+      ],
+      "Rd": [
+        -0.00492000007629395,
+        0.00617000007629395
+      ]
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "source_document": {
+    "path": "E:\\CIE\\25T(浦镇)车辆动力学参数.docx",
+    "sha256": "9221c70bd9b8f523c0e9e1e66cd0899a14dfae6931929cb1ba5de13b34b07fd7"
+  },
+  "parameter_status": "Document-based vertical vehicle parameters; assumed track/support/speed; not experimentally validated",
+  "bogie_mass_kg": 2160.0,
+  "wheelset_mass_kg": 1600.0,
+  "bogie_spacing_m": 18.0,
+  "wheelbase_m": 2.6,
+  "bogie_height_m": 0.5365,
+  "wheel_radius_m": 0.4575,
+  "primary_k_N_m": 1982000.0,
+  "secondary_k_N_m": 740000.0,
+  "primary_lower_z_m": 0.62,
+  "primary_upper_z_m": 0.926,
+  "secondary_lower_z_m": 0.6,
+  "secondary_upper_z_m": 0.959,
+  "primary_dampers_per_axle": 2,
+  "secondary_dampers_per_bogie": 2,
+  "primary_damper_curve_m_s_N": [
+    [
+      0,
+      0
+    ],
+    [
+      0.3,
+      2600.0
+    ],
+    [
+      0.5,
+      4095.0
+    ],
+    [
+      1.5,
+      9650.0
+    ]
+  ],
+  "secondary_damper_curve_m_s_N": [
+    [
+      0,
+      0
+    ],
+    [
+      0.15,
+      2250.0
+    ],
+    [
+      0.5,
+      3115.0
+    ]
+  ],
+  "support_k_N_m": 100000000.0,
+  "support_c_Ns_m": 20000,
+  "speed_m_s": 33.333333333333336,
+  "track_amplitude_m": 0.001,
+  "track_wavelength_m": 25,
+  "track_start_m": 40,
+  "track_length_m": 200,
+  "gravity_m_s2": 9.81,
+  "assumptions": {
+    "speed": "120 km/h scenario assumption; no operating speed specified in source document",
+    "support": "Legacy linear bilateral equivalent axle support, not Hertz contact; source does not give these values",
+    "track": "Synthetic windowed sinusoid retained for comparison; no measured irregularity in document",
+    "dampers": "Two per axle / two per bogie; odd symmetry, origin added, linear interpolation and last-segment extrapolation",
+    "damper_joints": "Source joint stiffnesses recorded but not modeled; dampers act directly on relative vertical velocity",
+    "reduction": "Seven vertical translations only; axlebox mass lumped, no pitch/roll/yaw or arm inertia",
+    "air_spring": "Normal inflated linear equivalent; deflated case not modeled"
+  },
+  "reference_only_not_used": {
+    "bare_wheelset_mass_kg": 1384.0,
+    "wheelset_inertia_kg_m2": [
+      655.6,
+      106.5,
+      655.6
+    ],
+    "bogie_inertia_kg_m2": [
+      1392.0,
+      2663.0,
+      3680.0
+    ],
+    "inertia_note": "Source says carbody parameter origin is at car center on rail plane. Do not assign directly as COM inertias without clarifying reference axes.",
+    "primary_damper_joint_stiffness_N_m": 1515000.0,
+    "secondary_damper_joint_stiffness_N_m": 16000000.0,
+    "car_inertia_source_kg_m2": [
+      291000.0,
+      3198000.0,
+      3010000.0
+    ]
+  },
+  "model_label": "Puzhen 25T CA empty",
+  "car_mass_kg": 37000.0,
+  "car_height_m": 2.045
+}

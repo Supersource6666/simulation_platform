@@ -1,0 +1,40 @@
+{
+  "vehicle_config": "25t_yz_loaded.json",
+  "backend": "modal",
+  "rail_count": 1,
+  "dt_s": 0.0001,
+  "duration_s": 2,
+  "initial_car_position_m": 30,
+  "speed_profile": [
+    [
+      0,
+      33.333333333333336
+    ]
+  ],
+  "car_pitch_inertia_kg_m2": 1406700,
+  "bogie_pitch_inertia_kg_m2": 1216.8,
+  "hertz_N_m32": 100000000000,
+  "max_coupling_iterations": 10,
+  "force_relative_tolerance": 1e-07,
+  "displacement_absolute_tolerance_m": 1e-09,
+  "force_reference_N": 100000,
+  "max_phase_increment": 0.2,
+  "rail": {
+    "length_m": 120,
+    "rhoA_kg_m": 60,
+    "EI_N_m2": 6400000,
+    "kf_N_m2": 60000000,
+    "cf_Ns_m2": 30000,
+    "modes": 320,
+    "elements": 120
+  },
+  "assumptions": {
+    "status": "Numerical validation baseline, not calibrated vehicle-track prediction",
+    "vehicle": "Source masses and stiffness; linear damping from initial slope of source damper curves",
+    "pitch_inertia": "COM scenario estimates mc*18^2/12 and mb*2.6^2/12; source inertia axes remain unconfirmed",
+    "rail": "Illustrative simply supported Euler-Bernoulli rail with distributed Winkler foundation; rail self-weight absorbed into unloaded reference",
+    "contact": "One-rail mode is an equivalent axle contact carrying total axle force; KH and rail properties are independent scenario assumptions",
+    "twin_rail": "Two independent rails with eight contacts; wheels retain vertical translation only, no roll; KH is per wheel in this mode",
+    "motion": "Prescribed piecewise-linear speed, exact interval integration; constant final speed after last knot"
+  }
+}
