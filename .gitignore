@@ -127,3 +127,72 @@ applications/railway_vehicle/output/
 /out_*/
 *.bak
 *.log
+
+##---------------------------------------------------
+## Local/generated files for remote pushes
+##---------------------------------------------------
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Visual Studio and MSVC generated files
+.vs/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+*.sln.docstates
+*.obj
+*.pdb
+*.idb
+*.ilk
+*.exp
+*.dll
+*.exe
+
+# CMake/CTest generated files outside the canonical root build directory
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+Makefile
+*.ninja
+.ninja_deps
+.ninja_log
+
+# Python environments, caches, tests, and tooling
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+htmlcov/
+
+# Editor swap/temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.~lock.*
+
+# Railway-vehicle generated outputs and local scratch data
+/applications/railway_vehicle/output/
+/applications/railway_vehicle/output-*/
+/applications/railway_vehicle/output_*/
+/applications/railway_vehicle/tmp/
+/applications/railway_vehicle/.cache/
+
+# These are intentional, reproducible inputs and compact reference artifacts.
+!/applications/railway_vehicle/data/route/
+!/applications/railway_vehicle/data/route/**
+!/applications/railway_vehicle/reference/
+!/applications/railway_vehicle/reference/**
+!/applications/railway_vehicle/repro_manifest.json
