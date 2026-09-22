@@ -43,7 +43,7 @@
 | 速度源数据单位 | km/h |
 | 超高计算基准轨距 | 1.435 m |
 | 新轮直径 | 0.915 m |
-| Hertz常数 | 9.37e10 N/m^(3/2) |
+| Hertz回退常数 | 9.37e10 N/m^(3/2)；型面模式运行时动态计算 |
 
 曲率和超高采用同号约定：
 
@@ -69,6 +69,14 @@
 
 - track_input_checks：轨道、曲率、超高和速度输入检查
 - vehicle_31dof_checks：静载平衡、Hertz接触、左右轮和31DOF动态响应检查
+
+## 图形交互界面
+
+从项目根目录启动：
+
+    python applications/railway_vehicle/scripts/interactive_runner.py
+
+界面可以选择实测不平顺、平面曲率、超高、速度、车轮型面和钢轨型面文件，并设置仿真时长、积分步长、绘图抽样和输出目录。支持输入校验、另存配置、启动/停止仿真、实时进度、结果绘图和打开输出目录。正式配置文件不会被界面覆盖；每次运行的解析后配置及全部输入快照仍保存在结果目录中。
 
 ## 一键复现180 s结果
 
@@ -97,6 +105,7 @@
 另开一个PowerShell窗口。以下命令每次都会重新读取CSV，避免重复显示旧变量：
 
     $p = "applications/railway_vehicle/output/31dof_run_180s/response.csv"
+    $p = "applications/railway_vehicle/output/31dof_profile_hertz_180s/response.csv"
     $t = [double](Get-Content -LiteralPath $p -Tail 1).Split(",")[0]
     "当前进度：$t / 180 s（$([math]::Round($t / 180 * 100, 1))%）"
 
@@ -106,6 +115,8 @@
     while (Get-Process -Name railway_vehicle -ErrorAction SilentlyContinue) { $t = [double](Get-Content -LiteralPath $p -Tail 1).Split(",")[0]; Write-Host "`r当前进度：$t / 180 s（$([math]::Round($t / 180 * 100, 1))%）" -NoNewline; Start-Sleep 10 }
 
 ## 单独绘图
+
+    python applications/railway_vehicle/scripts/plot_results.py applications/railway_vehicle/output/31dof_profile_hertz_180s/response.csv --stride 3
 
     python applications/railway_vehicle/scripts/plot_results.py applications/railway_vehicle/output/31dof_run_180s/response.csv --stride 3
 
@@ -153,9 +164,9 @@
 
 当前模型是31DOF降阶车辆模型，不是完整轮轨型面接触求解器。需要注意：
 
-- Hertz接触使用给定的标量K_H
-- 尚未导入LM/CN60完整型面坐标
-- 尚未进行接触点搜索、接触椭圆变化和轮缘接触计算
+- 法向接触使用LMa/CHN60型面接触点查表，并根据局部组合曲率动态计算K_H
+- data/LMa.prw与data/CHN60.prr已参与左右轮接触点搜索和动态K_H计算
+- 当前为二维单接触与等效球Hertz近似；尚不包含精确椭圆积分、踏面/轮缘同时多点接触
 - 横向蠕滑采用线性Kalker系数，没有非线性饱和
 - 二系横向参数和Hertz常数尚未通过实车试验标定
 - 出现单轮法向力为0时表示模型发生轮轨接触截断，不能直接作为脱轨安全结论
@@ -169,3 +180,6 @@ Project Chrono是采用BSD许可证的开源多物理场仿真框架。本项目
 - 官网：https://projectchrono.org/
 - 文档：https://api.projectchrono.org/
 - 许可证：https://projectchrono.org/license-chrono.txt
+## 31DOF 实时场景接口
+
+`railway_vehicle` 除可复现离线计算外，还支持通过 `--godot-stream` 将每个积分步的车辆状态和左右轮法向力实时转发到 Godot `travel` 场景。完整启动命令、`railway31dof.v1` 数据协议和场景映射见 [实时接口说明](applications/railway_vehicle/docs/realtime_godot_interface.md)。
