@@ -183,3 +183,12 @@ Project Chrono是采用BSD许可证的开源多物理场仿真框架。本项目
 ## 31DOF 实时场景接口
 
 `railway_vehicle` 除可复现离线计算外，还支持通过 `--godot-stream` 将每个积分步的车辆状态和左右轮法向力实时转发到 Godot `travel` 场景。完整启动命令、`railway31dof.v1` 数据协议和场景映射见 [实时接口说明](applications/railway_vehicle/docs/realtime_godot_interface.md)。
+
+```bash
+.\build\railway_vehicle\Release\railway_vehicle.exe --config applications/railway_vehicle/config/25t_yz_loaded_3d_measured_plan_180s.json --duration 180 --dt 0.001 --output applications/railway_vehicle/output/35dof_reproduced_180s
+```
+
+```python
+python applications/railway_vehicle/scripts/plot_results.py `
+  applications/railway_vehicle/output/35dof_reproduced_180s/response.csv --stride 3
+```
